@@ -10,6 +10,7 @@ import com.cibertec.colitafeliz.service.UserService;
 import com.cibertec.colitafeliz.utils.EmailUtils;
 import com.cibertec.colitafeliz.utils.GlobalUtils;
 import com.cibertec.colitafeliz.wrapper.UserWrapper;
+import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -48,7 +49,7 @@ public class UserServiceImpl implements UserService {
                 Optional<UserEntity> user = userDao.findByEmailId(requestMap.get("email"));
                 if(!user.isPresent()){
                     userDao.save(getUserFromMap(requestMap));
-                    return GlobalUtils.getResponseEntity(GlobalConstants.USER_CREATED, HttpStatus.OK);
+                    return GlobalUtils.getResponseEntity(GlobalConstants.SUCCESS_CREATED, HttpStatus.OK);
                 } else {
                     return GlobalUtils.getResponseEntity(GlobalConstants.USER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
                 }
@@ -159,4 +160,49 @@ public class UserServiceImpl implements UserService {
             }
         }
     }
+
+    @Override
+    public ResponseEntity<String> checkToken() {
+        return GlobalUtils.getResponseEntity("true", HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<String> changePassword(Map<String, String> requestMap) {
+        try {
+            Optional<UserEntity> user = userDao.findByEmail(JwtFilter.getCurrentUser());
+            if(user.isPresent()) {
+                if(user.get().getPassword().equals(requestMap.get("oldPassword"))) {
+                    user.get().setPassword(requestMap.get("newPassword"));
+                    userDao.save(user.get());
+                    return GlobalUtils.getResponseEntity(GlobalConstants.PASSWORD_CHANGED, HttpStatus.OK);
+                } else {
+                    return GlobalUtils.getResponseEntity(GlobalConstants.INVALID_PASSWORD, HttpStatus.BAD_REQUEST);
+                }
+            }
+            return GlobalUtils.getResponseEntity(GlobalConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return GlobalUtils.getResponseEntity(GlobalConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Override
+    public ResponseEntity<String> forgotPassword(Map<String, String> requestMap) {
+        try {
+            Optional<UserEntity> user = userDao.findByEmail(requestMap.get("email"));
+            if(user.isPresent() && !Strings.isNullOrEmpty(user.get().getEmail())) {
+                String newPassword = UUID.randomUUID().toString().substring(0, 8);
+                user.get().setPassword(newPassword);
+                userDao.save(user.get());
+                emailUtils.forgotPassword(user.get().getEmail(), "Nueva contraseña", newPassword);
+                return GlobalUtils.getResponseEntity("Recibe su correo para generar la nueva contraseña", HttpStatus.OK);
+            } else {
+                return GlobalUtils.getResponseEntity("El correo no existe", HttpStatus.BAD_REQUEST);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return GlobalUtils.getResponseEntity(GlobalConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.cibertec.colitafeliz.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,6 +43,7 @@ public class UserEntity implements Serializable {
     private String contactNumber;
 
     @Column(unique = true)
+    @Email
     private String email;
 
     @NotBlank

@@ -30,6 +30,8 @@ public interface UserDao extends JpaRepository<UserEntity, UUID>{
     @Query("UPDATE UserEntity u SET u.status = :status WHERE u.id = :id")
     Integer updateStatus(@Param("status") String status, @Param("id") UUID id);
 
+    Optional<UserEntity> findByEmail(String email);
+
 
 
     /*

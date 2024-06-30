@@ -3,6 +3,7 @@ package com.cibertec.colitafeliz.utils;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -15,6 +16,9 @@ public class EmailUtils {
 
     @Autowired
     private JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String mailIssuer;
 
     public void sendSimpleMessage(String to, String subject, String text, List<String> ccList) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
@@ -30,6 +34,19 @@ public class EmailUtils {
             helper.setCc(ccList.toArray(new String[0])); // Setting CC recipients
         }
 
+        mailSender.send(message);
+    }
+
+    public void forgotPassword(String to, String subject, String password) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true); // true indicates multipart message
+
+        helper.setFrom(mailIssuer);
+        helper.setTo(to);
+        helper.setSubject(subject);
+
+        String htmlMsg = "<html><body><h1>Colita Feliz</h1><p>Se ha solicitado la recuperación de contraseña.</p><p>Su nueva contraseña es: <strong>" + password + "</strong></p><br><a href=\"http://localhost:4200/\">Clic para logearte</a></body></html>";
+        message.setContent(htmlMsg, "text/html");
         mailSender.send(message);
     }
 
